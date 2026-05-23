@@ -1,12 +1,14 @@
 package com.example.quantserver.global.response;
 
 import com.example.quantserver.global.exception.ErrorCode;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@JsonPropertyOrder({"code", "message", "data", "success"})
 public class ApiResponse<T> {
 
     private boolean success;
@@ -22,11 +24,11 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "SUCCESS", "요청이 성공했습니다.", data);
+        return new ApiResponse<>(true, "200", "요청이 성공했습니다.", data);
     }
 
     public static <T> ApiResponse<T> success() {
-        return new ApiResponse<>(true, "SUCCESS", "요청이 성공했습니다.", null);
+        return new ApiResponse<>(true, "200", "요청이 성공했습니다.", null);
     }
 
     public static <T> ApiResponse<T> fail(ErrorCode errorCode) {

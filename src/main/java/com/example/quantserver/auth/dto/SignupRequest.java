@@ -2,7 +2,7 @@ package com.example.quantserver.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 
 public record SignupRequest(
 
@@ -11,7 +11,10 @@ public record SignupRequest(
         String email,
 
         @NotBlank(message = "비밀번호를 입력해주세요.")
-        @Size(min = 8, message = "비밀번호는 8자 이상이어야 합니다.")
+        @Pattern(
+                regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*]).{8,}$",
+                message = "비밀번호는 8자 이상이며 영문, 숫자, 특수문자(!@#$%^&*)를 포함해야 합니다."
+        )
         String password,
 
         @NotBlank(message = "닉네임을 입력해주세요.")
