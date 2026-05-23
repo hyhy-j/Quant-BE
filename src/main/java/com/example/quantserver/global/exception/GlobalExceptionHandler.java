@@ -1,6 +1,6 @@
 package com.example.quantserver.global.exception;
 
-import com.example.quantserver.global.common.ApiResponse;
+import com.example.quantserver.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;

@@ -1,4 +1,4 @@
-package com.example.quantserver.global.common;
+package com.example.quantserver.global.response;
 
 import com.example.quantserver.global.exception.ErrorCode;
 import lombok.AccessLevel;

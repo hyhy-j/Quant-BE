@@ -1,5 +1,5 @@
 ---
-name: 기능 구현
+name: feature
 about: 새로운 기능 구현을 위한 이슈
 title: ""
 labels: ""
