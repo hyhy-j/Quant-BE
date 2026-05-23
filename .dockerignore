@@ -6,3 +6,6 @@ src
 out
 *.md
 *.iml
+.env
+.env.*
+!*.example
