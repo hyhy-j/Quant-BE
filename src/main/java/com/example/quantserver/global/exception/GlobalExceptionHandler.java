@@ -48,8 +48,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<?>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        if (message != null && message.contains("uq_users_email_active")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.fail(ErrorCode.EMAIL_ALREADY_EXISTS));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.fail(ErrorCode.EMAIL_ALREADY_EXISTS));
+                .body(ApiResponse.fail(ErrorCode.DATA_INTEGRITY_VIOLATION));
     }
 
     @ExceptionHandler(Exception.class)
