@@ -5,7 +5,7 @@ CREATE TABLE users
     password   VARCHAR(255) NOT NULL,
     nickname   VARCHAR(255) NOT NULL,
     role       VARCHAR(50)  NOT NULL,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
 );
