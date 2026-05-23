@@ -4,26 +4,24 @@ import com.example.quantserver.auth.dto.LoginRequest;
 import com.example.quantserver.auth.dto.RefreshRequest;
 import com.example.quantserver.auth.dto.SignupRequest;
 import com.example.quantserver.auth.dto.TokenResponse;
+import com.example.quantserver.global.common.RedisKeys;
 import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.global.jwt.JwtTokenProvider;
-import com.example.quantserver.user.domain.User;
+import com.example.quantserver.user.entity.User;
 import com.example.quantserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuthService {
-
-    private static final String REFRESH_TOKEN_PREFIX = "RT:";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -44,24 +42,10 @@ public class AuthService {
 
         userRepository.save(user);
 
-        List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole().name())
-        );
-
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), authorities);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
-
-        redisTemplate.opsForValue().set(
-                REFRESH_TOKEN_PREFIX + user.getEmail(),
-                refreshToken,
-                jwtTokenProvider.getRefreshTokenExpiration(),
-                TimeUnit.MILLISECONDS
-        );
-
-        return TokenResponse.of(accessToken, refreshToken);
+        return issueTokens(user);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -70,67 +54,61 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
 
-        List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole().name())
-        );
+        return issueTokens(user);
+    }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail(), authorities);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+    public void logout(Long userId, String accessToken) {
+        redisTemplate.delete(RedisKeys.REFRESH_TOKEN_PREFIX + userId);
+        long remaining = jwtTokenProvider.getRemainingExpiration(accessToken);
+        if (remaining > 0) {
+            redisTemplate.opsForValue().set(
+                    RedisKeys.BLACKLIST_PREFIX + accessToken,
+                    "logout",
+                    remaining,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+    }
+
+    @Transactional
+    public TokenResponse refresh(RefreshRequest request) {
+        String refreshToken = request.refreshToken();
+
+        jwtTokenProvider.validateTokenOrThrow(refreshToken);
+
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        String savedToken = redisTemplate.opsForValue().get(RedisKeys.REFRESH_TOKEN_PREFIX + userId);
+
+        if (savedToken == null || !savedToken.equals(refreshToken)) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        return issueTokens(user);
+    }
+
+    @Transactional
+    public void withdraw(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        userRepository.delete(user);
+        redisTemplate.delete(RedisKeys.REFRESH_TOKEN_PREFIX + userId);
+    }
+
+    private TokenResponse issueTokens(User user) {
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         redisTemplate.opsForValue().set(
-                REFRESH_TOKEN_PREFIX + user.getEmail(),
+                RedisKeys.REFRESH_TOKEN_PREFIX + user.getId(),
                 refreshToken,
                 jwtTokenProvider.getRefreshTokenExpiration(),
                 TimeUnit.MILLISECONDS
         );
 
         return TokenResponse.of(accessToken, refreshToken);
-    }
-
-    public void logout(String email) {
-        redisTemplate.delete(REFRESH_TOKEN_PREFIX + email);
-    }
-
-    public TokenResponse refresh(RefreshRequest request) {
-        String refreshToken = request.refreshToken();
-
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
-        }
-
-        String email = jwtTokenProvider.getAuthentication(refreshToken).getName();
-        String savedToken = redisTemplate.opsForValue().get(REFRESH_TOKEN_PREFIX + email);
-
-        if (savedToken == null || !savedToken.equals(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
-        }
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole().name())
-        );
-
-        String newAccessToken = jwtTokenProvider.createAccessToken(email, authorities);
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(email);
-
-        redisTemplate.opsForValue().set(
-                REFRESH_TOKEN_PREFIX + email,
-                newRefreshToken,
-                jwtTokenProvider.getRefreshTokenExpiration(),
-                TimeUnit.MILLISECONDS
-        );
-
-        return TokenResponse.of(newAccessToken, newRefreshToken);
-    }
-
-    @Transactional
-    public void withdraw(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        userRepository.delete(user);
-        redisTemplate.delete(REFRESH_TOKEN_PREFIX + email);
     }
 }
