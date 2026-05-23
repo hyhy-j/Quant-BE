@@ -1,6 +1,8 @@
 package com.example.quantserver.global.jwt;
 
 import com.example.quantserver.global.config.JwtProperties;
+import com.example.quantserver.global.exception.BusinessException;
+import com.example.quantserver.global.exception.ErrorCode;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -8,24 +10,18 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
+    private final CustomUserDetailsService customUserDetailsService;
     private SecretKey secretKey;
 
     @PostConstruct
@@ -33,23 +29,18 @@ public class JwtTokenProvider {
         secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtProperties.getSecret()));
     }
 
-    public String createAccessToken(String subject, Collection<? extends GrantedAuthority> authorities) {
-        return buildToken(subject, authorities, jwtProperties.getAccessTokenExpiration());
+    public String createAccessToken(Long userId) {
+        return buildToken(String.valueOf(userId), jwtProperties.getAccessTokenExpiration());
     }
 
-    public String createRefreshToken(String subject) {
-        return buildToken(subject, Collections.emptyList(), jwtProperties.getRefreshTokenExpiration());
+    public String createRefreshToken(Long userId) {
+        return buildToken(String.valueOf(userId), jwtProperties.getRefreshTokenExpiration());
     }
 
-    private String buildToken(String subject, Collection<? extends GrantedAuthority> authorities, long expirationMs) {
+    private String buildToken(String subject, long expirationMs) {
         Date now = new Date();
-        List<String> roles = authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
         return Jwts.builder()
                 .subject(subject)
-                .claim("roles", roles)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(secretKey)
@@ -57,16 +48,13 @@ public class JwtTokenProvider {
     }
 
     public Authentication getAuthentication(String token) {
-        Claims claims = parseClaims(token);
+        String userId = parseClaims(token).getSubject();
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(userId);
+        return new UsernamePasswordAuthenticationToken(userDetails, token, userDetails.getAuthorities());
+    }
 
-        @SuppressWarnings("unchecked")
-        List<String> roles = (List<String>) claims.get("roles", List.class);
-        List<SimpleGrantedAuthority> authorities = (roles == null || roles.isEmpty())
-                ? Collections.emptyList()
-                : roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-
-        UserDetails principal = new User(claims.getSubject(), "", authorities);
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+    public Long getUserId(String token) {
+        return Long.parseLong(parseClaims(token).getSubject());
     }
 
     public boolean validateToken(String token) {
@@ -78,8 +66,22 @@ public class JwtTokenProvider {
         }
     }
 
+    public void validateTokenOrThrow(String token) {
+        try {
+            parseClaims(token);
+        } catch (ExpiredJwtException e) {
+            throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
+    }
+
     public long getRefreshTokenExpiration() {
         return jwtProperties.getRefreshTokenExpiration();
+    }
+
+    public long getRemainingExpiration(String token) {
+        return parseClaims(token).getExpiration().getTime() - System.currentTimeMillis();
     }
 
     private Claims parseClaims(String token) {
