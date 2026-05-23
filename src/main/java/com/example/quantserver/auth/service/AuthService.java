@@ -48,10 +48,10 @@ public class AuthService {
     @Transactional
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         return issueTokens(user);
