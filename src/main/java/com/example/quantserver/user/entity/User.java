@@ -1,6 +1,7 @@
-package com.example.quantserver.user.domain;
+package com.example.quantserver.user.entity;
 
 import com.example.quantserver.global.common.BaseEntity;
+import com.example.quantserver.user.enums.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -21,7 +22,7 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
