@@ -2,6 +2,8 @@ package com.example.quantserver.global.exception;
 
 import com.example.quantserver.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -42,6 +44,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleNoResourceFound(NoResourceFoundException e) {
         return ResponseEntity.status(ErrorCode.NOT_FOUND.getHttpStatus())
                 .body(ApiResponse.fail(ErrorCode.NOT_FOUND));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<?>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.fail(ErrorCode.EMAIL_ALREADY_EXISTS));
     }
 
     @ExceptionHandler(Exception.class)
