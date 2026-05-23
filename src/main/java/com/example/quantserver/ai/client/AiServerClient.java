@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.net.SocketTimeoutException;
 
@@ -32,6 +33,9 @@ public class AiServerClient {
                 throw new BusinessException(ErrorCode.AI_SERVER_TIMEOUT);
             }
             log.error("AI 서버 연결 실패", e);
+            throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
+        } catch (RestClientResponseException e) {
+            log.error("AI 서버 오류 응답 status={} body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
         }
     }
