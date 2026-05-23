@@ -66,6 +66,6 @@ jobs:
         with:
           context: .
           push: ${{ github.event_name == 'push' }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/quant-server:latest
+          tags: ${{ github.ref_name == 'main' && format('{0}/quant-server:latest', secrets.DOCKERHUB_USERNAME) || format('{0}/quant-server:develop', secrets.DOCKERHUB_USERNAME) }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
