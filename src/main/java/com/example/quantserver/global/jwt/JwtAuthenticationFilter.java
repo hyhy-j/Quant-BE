@@ -1,6 +1,7 @@
 package com.example.quantserver.global.jwt;
 
 import com.example.quantserver.global.common.RedisKeys;
+import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.global.response.ApiResponse;
 import jakarta.servlet.FilterChain;
@@ -42,6 +43,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Authentication authentication = jwtTokenProvider.getAuthentication(token);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
+            } catch (BusinessException e) {
+                SecurityContextHolder.clearContext();
             } catch (DataAccessException e) {
                 log.error("Redis 연결 실패로 인증 처리 불가", e);
                 SecurityContextHolder.clearContext();
