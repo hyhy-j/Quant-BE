@@ -3,7 +3,7 @@ package com.example.quantserver.global.config;
 import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.global.jwt.JwtAuthenticationFilter;
 import com.example.quantserver.global.response.ApiResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -30,7 +31,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     private static final String[] PUBLIC_URLS = {
             "/api/auth/signup",
@@ -68,7 +69,7 @@ public class SecurityConfig {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
-                    objectMapper.writeValueAsString(ApiResponse.fail(ErrorCode.UNAUTHORIZED))
+                    jsonMapper.writeValueAsString(ApiResponse.fail(ErrorCode.UNAUTHORIZED))
             );
         };
     }
@@ -79,7 +80,7 @@ public class SecurityConfig {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
-                    objectMapper.writeValueAsString(ApiResponse.fail(ErrorCode.FORBIDDEN))
+                    jsonMapper.writeValueAsString(ApiResponse.fail(ErrorCode.FORBIDDEN))
             );
         };
     }
