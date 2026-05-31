@@ -11,6 +11,7 @@ import com.example.quantserver.investment.repository.InvestmentProfileRepository
 import com.example.quantserver.user.entity.User;
 import com.example.quantserver.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,11 @@ public class InvestmentProfileService {
         if (profileRepository.existsByUserIdAndCurrentTrue(userId)) {
             throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS);
         }
-        return save(userId, request);
+        try {
+            return save(userId, request);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.PROFILE_ALREADY_EXISTS);
+        }
     }
 
     @Transactional
