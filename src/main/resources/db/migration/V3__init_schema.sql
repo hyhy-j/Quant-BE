@@ -10,7 +10,9 @@ CREATE TABLE investment_profiles
     investable_amount DECIMAL(18,0) NOT NULL,
     profile_type      VARCHAR(20)   NOT NULL CHECK (profile_type IN ('AGGRESSIVE', 'NEUTRAL', 'STABLE')),
     is_current        BOOLEAN       NOT NULL DEFAULT TRUE,
-    created_at        TIMESTAMP     NOT NULL DEFAULT NOW()
+    created_at        TIMESTAMP     NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMP,
+    deleted_at        TIMESTAMP
 );
 
 CREATE INDEX idx_investment_profiles_user_id ON investment_profiles (user_id);
@@ -25,7 +27,8 @@ CREATE TABLE stocks
     sector     VARCHAR(100),
     is_active  BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP    NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 CREATE TABLE stock_prices
@@ -39,6 +42,8 @@ CREATE TABLE stock_prices
     volume     BIGINT         NOT NULL,
     date       DATE           NOT NULL,
     created_at TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP,
     CONSTRAINT uq_stock_prices_code_date UNIQUE (stock_code, date)
 );
 
@@ -61,6 +66,8 @@ CREATE TABLE technical_indicators
     bb_lower       NUMERIC(18, 4),
     volume_anomaly BOOLEAN        NOT NULL DEFAULT FALSE,
     created_at     TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMP,
+    deleted_at     TIMESTAMP,
     CONSTRAINT uq_technical_indicators_code_date UNIQUE (stock_code, date)
 );
 
@@ -72,10 +79,11 @@ CREATE TABLE news_articles
     stock_code   VARCHAR(20)   NOT NULL,
     title        VARCHAR(500)  NOT NULL,
     content      TEXT,
-    url          VARCHAR(1000),
     source       VARCHAR(100),
     published_at VARCHAR(100),
-    created_at   TIMESTAMP     NOT NULL DEFAULT NOW()
+    created_at   TIMESTAMP     NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP,
+    deleted_at   TIMESTAMP
 );
 
 CREATE INDEX idx_news_articles_stock_code ON news_articles (stock_code);
@@ -87,7 +95,9 @@ CREATE TABLE news_sentiments
     stock_code      VARCHAR(20)  NOT NULL,
     score           DECIMAL(3,1) NOT NULL CHECK (score BETWEEN -1.0 AND 1.0),
     reason          TEXT,
-    created_at      TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP,
+    deleted_at      TIMESTAMP
 );
 
 CREATE INDEX idx_news_sentiments_stock_code ON news_sentiments (stock_code);
@@ -102,7 +112,9 @@ CREATE TABLE market_reports
     summary      TEXT,
     content      TEXT,
     generated_at TIMESTAMP    NOT NULL,
-    created_at   TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP,
+    deleted_at   TIMESTAMP
 );
 
 CREATE INDEX idx_market_reports_generated_at ON market_reports (generated_at DESC);
@@ -116,6 +128,8 @@ CREATE TABLE user_report_reads
     notified_at TIMESTAMP,
     read_at     TIMESTAMP,
     created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP,
+    deleted_at  TIMESTAMP,
     CONSTRAINT uq_user_report_reads UNIQUE (user_id, report_id)
 );
 
@@ -135,7 +149,9 @@ CREATE TABLE portfolio_recommendations
     sharpe_ratio        NUMERIC(5, 2),
     backtest_1y_return  NUMERIC(5, 2),
     status              VARCHAR(20)   NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'ARCHIVED')),
-    created_at          TIMESTAMP     NOT NULL DEFAULT NOW()
+    created_at          TIMESTAMP     NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP,
+    deleted_at          TIMESTAMP
 );
 
 CREATE INDEX idx_portfolio_recommendations_user_id ON portfolio_recommendations (user_id);
@@ -149,7 +165,9 @@ CREATE TABLE portfolio_items
     amount            DECIMAL(18,0),
     momentum_return   NUMERIC(5,2),
     reason            TEXT,
-    created_at        TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at        TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMP,
+    deleted_at        TIMESTAMP
 );
 
 CREATE INDEX idx_portfolio_items_recommendation_id ON portfolio_items (recommendation_id);
@@ -165,7 +183,8 @@ CREATE TABLE virtual_accounts
     total_realized_pnl DECIMAL(18,0) NOT NULL DEFAULT 0,
     is_trading_halted  BOOLEAN       NOT NULL DEFAULT FALSE,
     created_at         TIMESTAMP     NOT NULL DEFAULT NOW(),
-    updated_at         TIMESTAMP     NOT NULL DEFAULT NOW()
+    updated_at         TIMESTAMP,
+    deleted_at         TIMESTAMP
 );
 
 CREATE TABLE virtual_holdings
@@ -176,7 +195,8 @@ CREATE TABLE virtual_holdings
     quantity   BIGINT         NOT NULL,
     avg_price  NUMERIC(18, 4) NOT NULL,
     created_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP      NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP,
     CONSTRAINT uq_virtual_holdings_account_stock UNIQUE (account_id, stock_code)
 );
 
@@ -195,7 +215,8 @@ CREATE TABLE orders
     reject_reason  TEXT,
     executed_at    TIMESTAMP,
     created_at     TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at     TIMESTAMP      NOT NULL DEFAULT NOW()
+    updated_at     TIMESTAMP,
+    deleted_at     TIMESTAMP
 );
 
 CREATE INDEX idx_orders_account_id ON orders (account_id);
@@ -208,7 +229,9 @@ CREATE TABLE risk_violations
     order_id   BIGINT      REFERENCES orders (id),
     rule_type  VARCHAR(50) NOT NULL CHECK (rule_type IN ('CONCENTRATION_LIMIT', 'DAILY_TRADE_LIMIT', 'LOSS_HALT')),
     detail     TEXT,
-    created_at TIMESTAMP   NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP   NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 -- ==================== NOTIFICATION ====================
@@ -223,7 +246,8 @@ CREATE TABLE notification_settings
     price_change_threshold NUMERIC(5,2)          DEFAULT 5.0,
     report_notify_enabled  BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at             TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at             TIMESTAMP    NOT NULL DEFAULT NOW()
+    updated_at             TIMESTAMP,
+    deleted_at             TIMESTAMP
 );
 
 CREATE TABLE notifications
@@ -238,7 +262,9 @@ CREATE TABLE notifications
     reference_type VARCHAR(50),
     is_read        BOOLEAN      NOT NULL DEFAULT FALSE,
     sent_at        TIMESTAMP,
-    created_at     TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMP,
+    deleted_at     TIMESTAMP
 );
 
 CREATE INDEX idx_notifications_user_id_created_at ON notifications (user_id, created_at DESC);
@@ -254,7 +280,9 @@ CREATE TABLE agent_activity_logs
     detail      TEXT,
     started_at  TIMESTAMP,
     finished_at TIMESTAMP,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMP,
+    deleted_at  TIMESTAMP
 );
 
 CREATE INDEX idx_agent_activity_logs_created_at ON agent_activity_logs (created_at DESC);
