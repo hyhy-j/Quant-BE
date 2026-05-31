@@ -1,0 +1,50 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [ "CI" ]
+    branches: [ main ]
+    types: [ completed ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,AI_SERVER_URL,DOCKERHUB_USERNAME
+          script_stop: true
+          script: |
+            if [ ! -d ~/quant-server ]; then
+              git clone https://github.com/hyhy-j/quant-server.git ~/quant-server
+            fi
+            git -C ~/quant-server pull origin main
+
+            printf "DB_URL=%s\n" "$DB_URL" > ~/quant-server/.env
+            printf "DB_USERNAME=%s\n" "$DB_USERNAME" >> ~/quant-server/.env
+            printf "DB_PASSWORD=%s\n" "$DB_PASSWORD" >> ~/quant-server/.env
+            printf "REDIS_HOST=redis\n" >> ~/quant-server/.env
+            printf "REDIS_PORT=6379\n" >> ~/quant-server/.env
+            printf "JWT_SECRET=%s\n" "$JWT_SECRET" >> ~/quant-server/.env
+            printf "AI_SERVER_URL=%s\n" "$AI_SERVER_URL" >> ~/quant-server/.env
+            printf "DOCKERHUB_USERNAME=%s\n" "$DOCKERHUB_USERNAME" >> ~/quant-server/.env
+            printf "DOCKER_IMAGE_TAG=latest\n" >> ~/quant-server/.env
+
+            docker compose -f ~/quant-server/docker-compose.prod.yml pull
+            docker compose -f ~/quant-server/docker-compose.prod.yml up -d
+            docker image prune -f
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AI_SERVER_URL: ${{ secrets.AI_SERVER_URL }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
