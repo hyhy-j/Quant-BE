@@ -26,7 +26,8 @@ jobs:
             if [ ! -d ~/quant-server ]; then
               git clone https://github.com/${{ github.repository }}.git ~/quant-server
             fi
-            git -C ~/quant-server pull origin ${{ github.event.workflow_run.head_branch }}
+            git -C ~/quant-server fetch origin
+            git -C ~/quant-server checkout --force ${{ github.event.workflow_run.head_sha }}
 
             printf "DB_URL=%s\n" "$DB_URL" > ~/quant-server/.env
             printf "DB_USERNAME=%s\n" "$DB_USERNAME" >> ~/quant-server/.env
