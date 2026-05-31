@@ -40,7 +40,7 @@ jwt:
   refresh-token-expiration: 604800000
 
 ai-server:
-  base-url: ${AI_SERVER_URL:https://skimmer-slogan-recharger.ngrok-free.dev}
+  base-url: ${AI_SERVER_URL:http://localhost:8000}
 
 springdoc:
   swagger-ui:
