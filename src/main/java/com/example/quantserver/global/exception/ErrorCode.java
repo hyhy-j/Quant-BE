@@ -32,6 +32,9 @@ public enum ErrorCode {
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "IP001", "투자 성향 프로필을 찾을 수 없습니다."),
     PROFILE_ALREADY_EXISTS(HttpStatus.CONFLICT, "IP002", "이미 투자 성향 프로필이 존재합니다."),
 
+    // Report
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "리포트를 찾을 수 없습니다."),
+
     // AI Server
     AI_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI001", "AI 서버에 연결할 수 없습니다."),
     AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI002", "AI 서버 응답 시간이 초과되었습니다.");
