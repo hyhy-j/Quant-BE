@@ -38,7 +38,7 @@ public class MarketReportScheduler {
         long delayMs = 1000;
         String lastError = null;
 
-        while (attempt < MAX_RETRY) {
+        while (attempt <= MAX_RETRY) {
             try {
                 Optional<String> content = marketReportService.fetchContent();
                 if (content.isEmpty()) {
@@ -53,7 +53,7 @@ public class MarketReportScheduler {
                 attempt++;
                 lastError = e.getMessage();
                 log.warn("{} 리포트 생성 실패 {}/{}회 - {}", reportType, attempt, MAX_RETRY, lastError);
-                if (attempt < MAX_RETRY) {
+                if (attempt <= MAX_RETRY) {
                     sleep(delayMs);
                     delayMs *= 2;
                 }
