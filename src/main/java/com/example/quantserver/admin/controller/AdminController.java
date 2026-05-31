@@ -1,16 +1,17 @@
-package com.example.quantserver.report.controller;
+package com.example.quantserver.admin.controller;
 
 import com.example.quantserver.ai.dto.AgentActivityLogResponse;
 import com.example.quantserver.ai.repository.AgentActivityLogRepository;
 import com.example.quantserver.global.response.ApiResponse;
+import com.example.quantserver.report.enums.ReportType;
+import com.example.quantserver.report.service.MarketReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "Admin", description = "관리자 API")
@@ -20,6 +21,7 @@ import java.util.List;
 public class AdminController {
 
     private final AgentActivityLogRepository logRepository;
+    private final MarketReportService marketReportService;
 
     @Operation(summary = "에이전트 수집 현황 조회", description = "agentType 파라미터로 필터링 가능합니다.")
     @GetMapping("/data-status")
@@ -31,5 +33,13 @@ public class AdminController {
                 : logRepository.findAllByOrderByCreatedAtDesc().stream()
                         .map(AgentActivityLogResponse::from).toList();
         return ApiResponse.success(logs);
+    }
+
+    @Operation(summary = "[테스트] 리포트 수동 생성", description = "스케줄러를 수동으로 트리거합니다. reportType: MORNING / EVENING")
+    @PostMapping("/reports/generate")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<Void> generateReport(@RequestParam ReportType reportType) {
+        marketReportService.generateReport(reportType, LocalDateTime.now());
+        return ApiResponse.success();
     }
 }
