@@ -34,7 +34,7 @@ CREATE TABLE stocks
 CREATE TABLE stock_prices
 (
     id         BIGSERIAL      PRIMARY KEY,
-    stock_code VARCHAR(10)    NOT NULL,
+    stock_code VARCHAR(20)    NOT NULL,
     open       NUMERIC(18, 4) NOT NULL,
     high       NUMERIC(18, 4) NOT NULL,
     low        NUMERIC(18, 4) NOT NULL,
@@ -52,7 +52,7 @@ CREATE INDEX idx_stock_prices_code_date ON stock_prices (stock_code, date DESC);
 CREATE TABLE technical_indicators
 (
     id             BIGSERIAL      PRIMARY KEY,
-    stock_code     VARCHAR(10)    NOT NULL,
+    stock_code     VARCHAR(20)    NOT NULL,
     date           DATE           NOT NULL,
     ma5            NUMERIC(18, 4),
     ma20           NUMERIC(18, 4),
