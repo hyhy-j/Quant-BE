@@ -1,6 +1,7 @@
 package com.example.quantserver.investment.entity;
 
 import com.example.quantserver.global.common.BaseEntity;
+import com.example.quantserver.investment.enums.InvestmentPeriod;
 import com.example.quantserver.investment.enums.ProfileType;
 import com.example.quantserver.user.entity.User;
 import jakarta.persistence.*;
@@ -35,8 +36,9 @@ public class InvestmentProfile extends BaseEntity {
     @Column(nullable = false)
     private short riskTolerance;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String investmentPeriod;
+    private InvestmentPeriod investmentPeriod;
 
     @Column(nullable = false)
     private BigDecimal investableAmount;
@@ -50,7 +52,7 @@ public class InvestmentProfile extends BaseEntity {
 
     @Builder
     public InvestmentProfile(User user, String investmentGoal, short riskTolerance,
-                              String investmentPeriod, BigDecimal investableAmount,
+                              InvestmentPeriod investmentPeriod, BigDecimal investableAmount,
                               ProfileType profileType) {
         this.user = user;
         this.investmentGoal = investmentGoal;
