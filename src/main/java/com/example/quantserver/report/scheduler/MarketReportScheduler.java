@@ -57,10 +57,18 @@ public class MarketReportScheduler {
                     sleep(delayMs);
                     delayMs *= 2;
                 }
+            } catch (Exception e) {
+                log.error("{} 리포트 처리 중 예상치 못한 오류 발생", reportType, e);
+                lastError = e.getMessage();
+                break;
             }
         }
 
-        marketReportService.saveFailureLog(reportType, startedAt, lastError);
+        try {
+            marketReportService.saveFailureLog(reportType, startedAt, lastError);
+        } catch (Exception e) {
+            log.error("{} 실패 로그 저장 실패", reportType, e);
+        }
         log.error("{} 리포트 생성 최종 실패", reportType);
     }
 
