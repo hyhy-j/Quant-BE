@@ -102,11 +102,10 @@ public class InvestmentProfileService {
     }
 
     private int amountScore(BigDecimal investableAmount) {
-        long amount = investableAmount.longValue();
-        if (amount < 1_000_000) return 0;
-        if (amount < 5_000_000) return 5;
-        if (amount < 15_000_000) return 10;
-        if (amount < 30_000_000) return 15;
+        if (investableAmount.compareTo(BigDecimal.valueOf(1_000_000)) < 0) return 0;
+        if (investableAmount.compareTo(BigDecimal.valueOf(5_000_000)) < 0) return 5;
+        if (investableAmount.compareTo(BigDecimal.valueOf(15_000_000)) < 0) return 10;
+        if (investableAmount.compareTo(BigDecimal.valueOf(30_000_000)) < 0) return 15;
         return 20;
     }
 }
