@@ -108,8 +108,6 @@ CREATE TABLE market_reports
 (
     id           BIGSERIAL    PRIMARY KEY,
     report_type  VARCHAR(20)  NOT NULL CHECK (report_type IN ('MORNING', 'EVENING')),
-    title        VARCHAR(300) NOT NULL,
-    summary      TEXT,
     content      TEXT,
     generated_at TIMESTAMP    NOT NULL,
     created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
