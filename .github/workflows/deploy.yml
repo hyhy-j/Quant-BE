@@ -24,9 +24,9 @@ jobs:
           script_stop: true
           script: |
             if [ ! -d ~/quant-server ]; then
-              git clone https://github.com/hyhy-j/quant-server.git ~/quant-server
+              git clone https://github.com/${{ github.repository }}.git ~/quant-server
             fi
-            git -C ~/quant-server pull origin main
+            git -C ~/quant-server pull origin ${{ github.event.workflow_run.head_branch }}
 
             printf "DB_URL=%s\n" "$DB_URL" > ~/quant-server/.env
             printf "DB_USERNAME=%s\n" "$DB_USERNAME" >> ~/quant-server/.env
