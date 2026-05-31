@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -39,7 +40,13 @@ public class MarketReportScheduler {
 
         while (attempt < MAX_RETRY) {
             try {
-                marketReportService.generateReport(reportType, startedAt);
+                Optional<String> content = marketReportService.fetchContent();
+                if (content.isEmpty()) {
+                    log.warn("{} 리포트 AI 빈 응답 수신 - 재시도 없이 실패 처리", reportType);
+                    marketReportService.saveFailureLog(reportType, startedAt, "AI 서버 빈 응답");
+                    return;
+                }
+                marketReportService.saveReport(content.get(), reportType, startedAt);
                 log.info("{} 리포트 생성 완료", reportType);
                 return;
             } catch (BusinessException e) {

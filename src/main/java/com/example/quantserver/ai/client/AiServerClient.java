@@ -13,6 +13,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.net.SocketTimeoutException;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -41,7 +42,7 @@ public class AiServerClient {
         }
     }
 
-    public String generateReport() {
+    public Optional<String> generateReport() {
         try {
             ReportGenerateResponse response = aiServerRestClient.post()
                     .uri("/report/generate")
@@ -49,9 +50,10 @@ public class AiServerClient {
                     .body(ReportGenerateResponse.class);
 
             if (response == null || response.portfolioReason() == null || response.portfolioReason().isBlank()) {
-                throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
+                log.warn("AI 서버 빈 응답 수신");
+                return Optional.empty();
             }
-            return response.portfolioReason();
+            return Optional.of(response.portfolioReason());
         } catch (ResourceAccessException e) {
             if (e.getCause() instanceof SocketTimeoutException) {
                 log.error("AI 서버 응답 시간 초과", e);

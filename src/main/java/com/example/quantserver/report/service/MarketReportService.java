@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,35 +42,37 @@ public class MarketReportService {
         return MarketReportResponse.from(report);
     }
 
-    @Transactional
-    public void generateReport(ReportType reportType, LocalDateTime startedAt) {
-        String content = aiServerClient.generateReport();
+    public Optional<String> fetchContent() {
+        return aiServerClient.generateReport();
+    }
 
+    @Transactional
+    public void saveReport(String content, ReportType reportType, LocalDateTime startedAt) {
         reportRepository.save(MarketReport.builder()
                 .reportType(reportType)
                 .content(content)
                 .generatedAt(LocalDateTime.now())
                 .build());
 
-        AgentActivityLog successLog = AgentActivityLog.builder()
+        AgentActivityLog log = AgentActivityLog.builder()
                 .agentType(AGENT_TYPE)
                 .action(reportType.name())
                 .status(AgentStatus.SUCCEEDED)
                 .startedAt(startedAt)
                 .build();
-        successLog.complete(AgentStatus.SUCCEEDED, null);
-        logRepository.save(successLog);
+        log.complete(AgentStatus.SUCCEEDED, null);
+        logRepository.save(log);
     }
 
     @Transactional
     public void saveFailureLog(ReportType reportType, LocalDateTime startedAt, String detail) {
-        AgentActivityLog failureLog = AgentActivityLog.builder()
+        AgentActivityLog log = AgentActivityLog.builder()
                 .agentType(AGENT_TYPE)
                 .action(reportType.name())
                 .status(AgentStatus.FAILED)
                 .startedAt(startedAt)
                 .build();
-        failureLog.complete(AgentStatus.FAILED, detail);
-        logRepository.save(failureLog);
+        log.complete(AgentStatus.FAILED, detail);
+        logRepository.save(log);
     }
 }

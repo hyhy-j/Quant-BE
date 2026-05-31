@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Tag(name = "Admin", description = "관리자 API")
 @RestController
@@ -39,7 +40,13 @@ public class AdminController {
     @PostMapping("/reports/generate")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Void> generateReport(@RequestParam ReportType reportType) {
-        marketReportService.generateReport(reportType, LocalDateTime.now());
+        LocalDateTime startedAt = LocalDateTime.now();
+        Optional<String> content = marketReportService.fetchContent();
+        if (content.isEmpty()) {
+            marketReportService.saveFailureLog(reportType, startedAt, "AI 서버 빈 응답");
+        } else {
+            marketReportService.saveReport(content.get(), reportType, startedAt);
+        }
         return ApiResponse.success();
     }
 }
