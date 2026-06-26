@@ -47,7 +47,7 @@ public class AiServerClient {
     public PythonPortfolioResponse requestPortfolioRecommend(PythonPortfolioRequest request) {
         try {
             PythonPortfolioResponse response = aiServerRestClient.post()
-                    .uri("/portfolio/recommend")
+                    .uri("/api/portfolio/recommend")
                     .body(request)
                     .retrieve()
                     .body(PythonPortfolioResponse.class);

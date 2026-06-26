@@ -14,9 +14,10 @@ import com.example.quantserver.portfolio.entity.PortfolioRecommendation;
 import com.example.quantserver.portfolio.repository.PortfolioItemRepository;
 import com.example.quantserver.portfolio.repository.PortfolioRecommendationRepository;
 import com.example.quantserver.user.entity.User;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +34,7 @@ public class PortfolioService {
     private final AiServerClient aiServerClient;
     private final PortfolioRecommendationRepository recommendationRepository;
     private final PortfolioItemRepository itemRepository;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Transactional
     public void generateAndSave(User user, InvestmentProfile profile) {
@@ -82,9 +83,9 @@ public class PortfolioService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
         List<PortfolioItem> items = itemRepository.findByRecommendationId(rec.getId());
-        List<String> topStocks = deserializeList(rec.getTopStocks(), String.class);
-        List<Double> curve = deserializeList(rec.getBacktestCurve(), Double.class);
-        List<Double> monthlyReturns = deserializeList(rec.getMonthlyReturns(), Double.class);
+        List<String> topStocks = deserializeStringList(rec.getTopStocks());
+        List<Double> curve = deserializeDoubleList(rec.getBacktestCurve());
+        List<Double> monthlyReturns = deserializeDoubleList(rec.getMonthlyReturns());
 
         return PortfolioResponse.of(rec, items, topStocks, curve, monthlyReturns);
     }
@@ -100,18 +101,27 @@ public class PortfolioService {
 
     private String serialize(Object value) {
         try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+            return jsonMapper.writeValueAsString(value);
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    private <T> List<T> deserializeList(String json, Class<T> elementType) {
+    private List<String> deserializeStringList(String json) {
         if (json == null || json.isBlank()) return List.of();
         try {
-            return objectMapper.readValue(json,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, elementType));
-        } catch (JsonProcessingException e) {
+            return jsonMapper.readValue(json, new TypeReference<>() {});
+        } catch (JacksonException e) {
+            log.warn("역직렬화 실패 json={}", json, e);
+            return List.of();
+        }
+    }
+
+    private List<Double> deserializeDoubleList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return jsonMapper.readValue(json, new TypeReference<>() {});
+        } catch (JacksonException e) {
             log.warn("역직렬화 실패 json={}", json, e);
             return List.of();
         }

@@ -42,18 +42,17 @@ public class PortfolioScheduler {
 
     private boolean generateWithRetry(InvestmentProfile profile) {
         Long userId = profile.getUser().getId();
-        int attempt = 0;
         long delayMs = 1000;
+        int totalAttempts = MAX_RETRY + 1;
 
-        while (attempt <= MAX_RETRY) {
+        for (int attempt = 1; attempt <= totalAttempts; attempt++) {
             try {
                 portfolioService.generateAndSave(profile.getUser(), profile);
                 log.info("포트폴리오 생성 성공 userId={}", userId);
                 return true;
             } catch (BusinessException e) {
-                attempt++;
-                log.warn("포트폴리오 생성 실패 userId={} {}/{}회 - {}", userId, attempt, MAX_RETRY, e.getMessage());
-                if (attempt <= MAX_RETRY) {
+                log.warn("포트폴리오 생성 실패 userId={} {}/{}회 - {}", userId, attempt, totalAttempts, e.getMessage());
+                if (attempt < totalAttempts) {
                     sleep(delayMs);
                     delayMs *= 2;
                 }
