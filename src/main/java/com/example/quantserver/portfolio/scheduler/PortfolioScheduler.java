@@ -6,6 +6,7 @@ import com.example.quantserver.investment.repository.InvestmentProfileRepository
 import com.example.quantserver.portfolio.service.PortfolioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ public class PortfolioScheduler {
     private final PortfolioService portfolioService;
     private final InvestmentProfileRepository profileRepository;
 
+    @Async
     @Scheduled(cron = "0 0 9 * * MON")
     public void generateWeeklyPortfolios() {
         List<InvestmentProfile> profiles = profileRepository.findAllCurrentWithUser();

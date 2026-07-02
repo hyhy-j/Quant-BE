@@ -38,9 +38,9 @@ public class AdminController {
         return ApiResponse.success(logs);
     }
 
-    @Operation(summary = "[테스트] 포트폴리오 수동 생성", description = "전체 유저 포트폴리오를 즉시 생성합니다.")
+    @Operation(summary = "[테스트] 포트폴리오 수동 생성", description = "전체 유저 포트폴리오 생성을 백그라운드로 트리거합니다.")
     @PostMapping("/portfolio/generate")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public ApiResponse<Void> generatePortfolios() {
         portfolioScheduler.generateWeeklyPortfolios();
         return ApiResponse.success();
