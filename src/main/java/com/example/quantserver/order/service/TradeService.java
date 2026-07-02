@@ -27,13 +27,15 @@ public class TradeService {
     private final StockRepository stockRepository;
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
+    private final PortfolioInitializer portfolioInitializer;
 
     public OrderExecuteResponse placeOrder(Long userId, TradeOrderRequest request) {
         Stock stock = stockRepository.findByName(request.stockName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
 
+        portfolioInitializer.ensureExists(userId, INITIAL_BALANCE);
         Portfolio portfolio = portfolioRepository.findWithLockByUserId(userId)
-                .orElseGet(() -> portfolioRepository.save(Portfolio.init(userId, INITIAL_BALANCE)));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity(), request.orderAmount());
 
