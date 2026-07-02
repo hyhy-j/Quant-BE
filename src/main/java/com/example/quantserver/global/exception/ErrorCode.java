@@ -40,7 +40,8 @@ public enum ErrorCode {
 
     // AI Server
     AI_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI001", "AI 서버에 연결할 수 없습니다."),
-    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI002", "AI 서버 응답 시간이 초과되었습니다.");
+    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI002", "AI 서버 응답 시간이 초과되었습니다."),
+    AI_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "AI003", "AI 서버 응답 형식이 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

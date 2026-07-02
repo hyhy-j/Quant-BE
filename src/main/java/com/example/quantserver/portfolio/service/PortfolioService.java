@@ -48,6 +48,15 @@ public class PortfolioService {
         );
 
         PythonPortfolioResponse response = aiServerClient.requestPortfolioRecommend(request);
+        validateResponse(response);
+
+        ProfileType riskType;
+        try {
+            riskType = ProfileType.valueOf(response.riskType());
+        } catch (IllegalArgumentException e) {
+            log.error("AI 서버 응답의 riskType 값이 올바르지 않음: {}", response.riskType());
+            throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+        }
 
         PortfolioRecommendation recommendation = PortfolioRecommendation.builder()
                 .user(user)
@@ -55,7 +64,7 @@ public class PortfolioService {
                 .totalAmount(profile.getInvestableAmount())
                 .mdd(BigDecimal.valueOf(response.backtestResult().mdd()))
                 .sharpeRatio(BigDecimal.valueOf(response.backtestResult().sharpe()))
-                .riskType(ProfileType.valueOf(response.riskType()))
+                .riskType(riskType)
                 .expectedReturn(BigDecimal.valueOf(response.backtestResult().expectedReturn()))
                 .backtestCurve(serialize(response.backtestResult().curve()))
                 .monthlyReturns(serialize(response.backtestResult().monthlyReturns()))
@@ -88,6 +97,14 @@ public class PortfolioService {
         List<Double> monthlyReturns = deserializeDoubleList(rec.getMonthlyReturns());
 
         return PortfolioResponse.of(rec, items, topStocks, curve, monthlyReturns);
+    }
+
+    private void validateResponse(PythonPortfolioResponse response) {
+        if (response.backtestResult() == null || response.portfolio() == null || response.riskType() == null) {
+            log.error("AI 서버 응답 필수 필드 누락: backtestResult={} portfolio={} riskType={}",
+                    response.backtestResult(), response.portfolio(), response.riskType());
+            throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+        }
     }
 
     private String toPythonPeriod(InvestmentPeriod period) {
