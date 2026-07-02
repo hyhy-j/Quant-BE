@@ -7,6 +7,7 @@ import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.portfolio.dto.PythonPortfolioRequest;
 import com.example.quantserver.portfolio.dto.PythonPortfolioResponse;
+import com.example.quantserver.trade.dto.AiOrderExecuteRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -69,6 +70,27 @@ public class AiServerClient {
         } catch (RestClientResponseException e) {
             log.error("AI 서버 오류 응답 status={} body={} userId={}",
                     e.getStatusCode(), e.getResponseBodyAsString(), request.userId());
+            throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
+        }
+    }
+
+    public void executePortfolio(AiOrderExecuteRequest request) {
+        try {
+            aiServerRestClient.post()
+                    .uri("/api/portfolio/execute")
+                    .body(request)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (ResourceAccessException e) {
+            if (e.getCause() instanceof SocketTimeoutException) {
+                log.error("AI 서버 응답 시간 초과 userId={} stockId={}", request.userId(), request.stockId(), e);
+                throw new BusinessException(ErrorCode.AI_SERVER_TIMEOUT);
+            }
+            log.error("AI 서버 연결 실패 userId={} stockId={}", request.userId(), request.stockId(), e);
+            throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
+        } catch (RestClientResponseException e) {
+            log.error("AI 서버 오류 응답 status={} body={} userId={} stockId={}",
+                    e.getStatusCode(), e.getResponseBodyAsString(), request.userId(), request.stockId());
             throw new BusinessException(ErrorCode.AI_SERVER_UNAVAILABLE);
         }
     }
