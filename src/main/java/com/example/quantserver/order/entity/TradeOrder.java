@@ -1,6 +1,6 @@
-package com.example.quantserver.trade.entity;
+package com.example.quantserver.order.entity;
 
-import com.example.quantserver.trade.enums.OrderSide;
+import com.example.quantserver.order.enums.OrderSide;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,15 +1,15 @@
-package com.example.quantserver.trade.service;
+package com.example.quantserver.order.service;
 
 import com.example.quantserver.ai.client.AiServerClient;
 import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
-import com.example.quantserver.trade.dto.AiOrderExecuteRequest;
-import com.example.quantserver.trade.dto.OrderExecuteResponse;
-import com.example.quantserver.trade.dto.TradeOrderRequest;
-import com.example.quantserver.trade.entity.Portfolio;
-import com.example.quantserver.trade.entity.Stock;
-import com.example.quantserver.trade.repository.PortfolioRepository;
-import com.example.quantserver.trade.repository.StockRepository;
+import com.example.quantserver.order.dto.AiOrderExecuteRequest;
+import com.example.quantserver.order.dto.OrderExecuteResponse;
+import com.example.quantserver.order.dto.TradeOrderRequest;
+import com.example.quantserver.order.entity.Portfolio;
+import com.example.quantserver.order.entity.Stock;
+import com.example.quantserver.order.repository.PortfolioRepository;
+import com.example.quantserver.order.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

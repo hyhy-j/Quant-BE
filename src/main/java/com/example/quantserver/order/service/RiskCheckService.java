@@ -1,12 +1,12 @@
-package com.example.quantserver.trade.service;
+package com.example.quantserver.order.service;
 
 import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
-import com.example.quantserver.trade.entity.Holding;
-import com.example.quantserver.trade.entity.Portfolio;
-import com.example.quantserver.trade.enums.OrderSide;
-import com.example.quantserver.trade.repository.HoldingRepository;
-import com.example.quantserver.trade.repository.TradeOrderRepository;
+import com.example.quantserver.order.entity.Holding;
+import com.example.quantserver.order.entity.Portfolio;
+import com.example.quantserver.order.enums.OrderSide;
+import com.example.quantserver.order.repository.HoldingRepository;
+import com.example.quantserver.order.repository.TradeOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

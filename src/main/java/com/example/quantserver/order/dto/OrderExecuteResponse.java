@@ -1,4 +1,4 @@
-package com.example.quantserver.trade.dto;
+package com.example.quantserver.order.dto;
 
 public record OrderExecuteResponse(
         Long orderId,

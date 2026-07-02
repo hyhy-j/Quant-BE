@@ -1,4 +1,4 @@
-package com.example.quantserver.trade.entity;
+package com.example.quantserver.order.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

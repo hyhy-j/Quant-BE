@@ -1,6 +1,6 @@
-package com.example.quantserver.trade.dto;
+package com.example.quantserver.order.dto;
 
-import com.example.quantserver.trade.enums.OrderSide;
+import com.example.quantserver.order.enums.OrderSide;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

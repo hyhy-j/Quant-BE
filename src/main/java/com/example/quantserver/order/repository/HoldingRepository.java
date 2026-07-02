@@ -1,6 +1,6 @@
-package com.example.quantserver.trade.repository;
+package com.example.quantserver.order.repository;
 
-import com.example.quantserver.trade.entity.Holding;
+import com.example.quantserver.order.entity.Holding;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
