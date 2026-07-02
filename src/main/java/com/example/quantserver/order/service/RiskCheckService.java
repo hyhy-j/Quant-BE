@@ -29,11 +29,11 @@ public class RiskCheckService {
     private final TradeOrderRepository tradeOrderRepository;
     private final HoldingRepository holdingRepository;
 
-    public void check(Portfolio portfolio, String stockCode, OrderSide side, long quantity) {
+    public void check(Portfolio portfolio, String stockCode, OrderSide side, long quantity, BigDecimal orderAmount) {
         checkLossHalt(portfolio);
         checkDailyTradeLimit(portfolio.getUserId());
         if (side == OrderSide.BUY) {
-            checkConcentrationLimit(portfolio, stockCode, quantity);
+            checkConcentrationLimit(portfolio, stockCode, quantity, orderAmount);
         }
     }
 
@@ -52,15 +52,12 @@ public class RiskCheckService {
         }
     }
 
-    private void checkConcentrationLimit(Portfolio portfolio, String stockCode, long quantity) {
+    private void checkConcentrationLimit(Portfolio portfolio, String stockCode, long quantity, BigDecimal orderAmount) {
         List<Holding> holdings = holdingRepository.findAllByUserId(portfolio.getUserId());
 
         Optional<Holding> targetHolding = holdings.stream()
                 .filter(h -> h.getStockCode().equals(stockCode))
                 .findFirst();
-
-        // 기존 보유 내역이 없으면 매입 단가를 알 수 없어 비중 계산 불가 → 검사 생략
-        if (targetHolding.isEmpty()) return;
 
         BigDecimal holdingsValue = holdings.stream()
                 .map(Holding::totalValue)
@@ -69,9 +66,10 @@ public class RiskCheckService {
 
         if (totalPortfolioValue.compareTo(BigDecimal.ZERO) == 0) return;
 
-        Holding holding = targetHolding.get();
-        BigDecimal newStockValue = holding.getAvgPrice()
-                .multiply(BigDecimal.valueOf(holding.getQuantity() + quantity));
+        BigDecimal newStockValue = targetHolding
+                .map(h -> h.getAvgPrice().multiply(BigDecimal.valueOf(h.getQuantity() + quantity)))
+                .orElse(orderAmount);
+
         BigDecimal weight = newStockValue.divide(totalPortfolioValue, 4, RoundingMode.HALF_UP);
 
         if (weight.compareTo(CONCENTRATION_LIMIT) > 0) {

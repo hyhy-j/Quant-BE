@@ -35,7 +35,7 @@ public class TradeService {
         Portfolio portfolio = portfolioRepository.findWithLockByUserId(userId)
                 .orElseGet(() -> portfolioRepository.save(Portfolio.init(userId, INITIAL_BALANCE)));
 
-        riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity());
+        riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity(), request.orderAmount());
 
         return aiServerClient.executePortfolio(new AiOrderExecuteRequest(
                 userId,
