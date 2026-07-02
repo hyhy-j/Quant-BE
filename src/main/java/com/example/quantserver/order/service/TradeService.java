@@ -32,7 +32,7 @@ public class TradeService {
         Stock stock = stockRepository.findByName(request.stockName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
 
-        Portfolio portfolio = portfolioRepository.findByUserId(userId)
+        Portfolio portfolio = portfolioRepository.findWithLockByUserId(userId)
                 .orElseGet(() -> portfolioRepository.save(Portfolio.init(userId, INITIAL_BALANCE)));
 
         riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity());
