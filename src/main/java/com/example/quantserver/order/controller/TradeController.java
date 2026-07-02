@@ -6,7 +6,6 @@ import com.example.quantserver.order.dto.OrderExecuteResponse;
 import com.example.quantserver.order.dto.OrderStatsResponse;
 import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
-import com.example.quantserver.order.service.TradeQueryService;
 import com.example.quantserver.order.service.TradeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 public class TradeController {
 
     private final TradeService tradeService;
-    private final TradeQueryService tradeQueryService;
 
     @Operation(summary = "주문 실행", description = "리스크 검사 후 AI 서버에 매수/매도 주문을 요청합니다.")
     @PostMapping
@@ -43,7 +41,7 @@ public class TradeController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PageableDefault(size = 20, sort = "executedAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponse.success(tradeQueryService.getOrders(userDetails.getId(), pageable));
+        return ApiResponse.success(tradeService.getOrders(userDetails.getId(), pageable));
     }
 
     @Operation(summary = "수익률 통계 조회", description = "일간·주간·월간 수익률을 조회합니다.")
@@ -51,6 +49,6 @@ public class TradeController {
     public ApiResponse<OrderStatsResponse> getStats(
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        return ApiResponse.success(tradeQueryService.getStats(userDetails.getId()));
+        return ApiResponse.success(tradeService.getStats(userDetails.getId()));
     }
 }
