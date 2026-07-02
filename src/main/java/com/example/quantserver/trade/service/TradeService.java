@@ -4,6 +4,7 @@ import com.example.quantserver.ai.client.AiServerClient;
 import com.example.quantserver.global.exception.BusinessException;
 import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.trade.dto.AiOrderExecuteRequest;
+import com.example.quantserver.trade.dto.OrderExecuteResponse;
 import com.example.quantserver.trade.dto.TradeOrderRequest;
 import com.example.quantserver.trade.entity.Portfolio;
 import com.example.quantserver.trade.entity.Stock;
@@ -27,7 +28,7 @@ public class TradeService {
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
 
-    public void placeOrder(Long userId, TradeOrderRequest request) {
+    public OrderExecuteResponse placeOrder(Long userId, TradeOrderRequest request) {
         Stock stock = stockRepository.findByName(request.stockName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
 
@@ -36,7 +37,7 @@ public class TradeService {
 
         riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity());
 
-        aiServerClient.executePortfolio(new AiOrderExecuteRequest(
+        return aiServerClient.executePortfolio(new AiOrderExecuteRequest(
                 userId,
                 stock.getCode(),
                 request.side(),

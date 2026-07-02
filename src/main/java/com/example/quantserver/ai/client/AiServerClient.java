@@ -8,6 +8,7 @@ import com.example.quantserver.global.exception.ErrorCode;
 import com.example.quantserver.portfolio.dto.PythonPortfolioRequest;
 import com.example.quantserver.portfolio.dto.PythonPortfolioResponse;
 import com.example.quantserver.trade.dto.AiOrderExecuteRequest;
+import com.example.quantserver.trade.dto.OrderExecuteResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -74,13 +75,20 @@ public class AiServerClient {
         }
     }
 
-    public void executePortfolio(AiOrderExecuteRequest request) {
+    public OrderExecuteResponse executePortfolio(AiOrderExecuteRequest request) {
         try {
-            aiServerRestClient.post()
+            OrderExecuteResponse response = aiServerRestClient.post()
                     .uri("/api/portfolio/execute")
                     .body(request)
                     .retrieve()
-                    .toBodilessEntity();
+                    .body(OrderExecuteResponse.class);
+            if (response == null) {
+                log.error("AI 서버 주문 실행 빈 응답 userId={} stockId={}", request.userId(), request.stockId());
+                throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+            }
+            return response;
+        } catch (BusinessException e) {
+            throw e;
         } catch (ResourceAccessException e) {
             if (e.getCause() instanceof SocketTimeoutException) {
                 log.error("AI 서버 응답 시간 초과 userId={} stockId={}", request.userId(), request.stockId(), e);
