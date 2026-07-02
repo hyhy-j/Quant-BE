@@ -1,7 +1,7 @@
 package com.example.quantserver.trade.dto;
 
 public record OrderStatusCallbackRequest(
-        String orderId,
+        Long orderId,
         Long userId,
         String stockId,
         String side,
