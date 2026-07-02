@@ -39,3 +39,6 @@ out/
 ### Local config ###
 application-local.yml
 .env
+
+### Local design assets ###
+design/

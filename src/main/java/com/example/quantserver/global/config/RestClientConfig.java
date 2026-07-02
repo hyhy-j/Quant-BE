@@ -15,8 +15,8 @@ public class RestClientConfig {
     @Bean
     public RestClient aiServerRestClient() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(30_000);
-        factory.setReadTimeout(30_000);
+        factory.setConnectTimeout(5_000);
+        factory.setReadTimeout(600_000);
 
         return RestClient.builder()
                 .baseUrl(aiServerBaseUrl)

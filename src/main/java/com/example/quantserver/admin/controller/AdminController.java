@@ -3,6 +3,7 @@ package com.example.quantserver.admin.controller;
 import com.example.quantserver.ai.dto.AgentActivityLogResponse;
 import com.example.quantserver.ai.repository.AgentActivityLogRepository;
 import com.example.quantserver.global.response.ApiResponse;
+import com.example.quantserver.portfolio.scheduler.PortfolioScheduler;
 import com.example.quantserver.report.enums.ReportType;
 import com.example.quantserver.report.service.MarketReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ public class AdminController {
 
     private final AgentActivityLogRepository logRepository;
     private final MarketReportService marketReportService;
+    private final PortfolioScheduler portfolioScheduler;
 
     @Operation(summary = "에이전트 수집 현황 조회", description = "agentType 파라미터로 필터링 가능합니다.")
     @GetMapping("/data-status")
@@ -34,6 +36,14 @@ public class AdminController {
                 : logRepository.findAllByOrderByCreatedAtDesc().stream()
                         .map(AgentActivityLogResponse::from).toList();
         return ApiResponse.success(logs);
+    }
+
+    @Operation(summary = "[테스트] 포트폴리오 수동 생성", description = "전체 유저 포트폴리오 생성을 백그라운드로 트리거합니다.")
+    @PostMapping("/portfolio/generate")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ApiResponse<Void> generatePortfolios() {
+        portfolioScheduler.generateWeeklyPortfolios();
+        return ApiResponse.success();
     }
 
     @Operation(summary = "[테스트] 리포트 수동 생성", description = "스케줄러를 수동으로 트리거합니다. reportType: MORNING / EVENING")
