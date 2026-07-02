@@ -1,11 +1,15 @@
 package com.example.quantserver.order.dto;
 
+import java.math.BigDecimal;
+
 public record OrderExecuteResponse(
-        Long orderId,
-        Long userId,
+        String status,
         String stockId,
         String side,
-        String status,
+        Long quantity,
+        BigDecimal price,
+        BigDecimal amount,
+        BigDecimal balanceAfter,
         String message
 ) {
 }
