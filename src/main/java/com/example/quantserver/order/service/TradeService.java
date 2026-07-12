@@ -122,7 +122,7 @@ public class TradeService {
                 .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
 
         BigDecimal holdingsValue = holdings.stream()
-                .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), BigDecimal.ZERO)
+                .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), holding.getAvgPrice())
                         .multiply(BigDecimal.valueOf(holding.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

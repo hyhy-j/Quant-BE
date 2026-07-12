@@ -45,12 +45,19 @@ public class DashboardService {
         List<DashboardResponse.StockSummary> stockSummaries = new ArrayList<>();
 
         for (Stock stock : stockRepository.findAll()) {
-            BigDecimal currentPrice = latestPrices.getOrDefault(stock.getCode(), BigDecimal.ZERO);
+            BigDecimal currentPrice = latestPrices.get(stock.getCode());
             Holding holding = holdingsByStockCode.get(stock.getCode());
 
             if (holding == null) {
                 stockSummaries.add(new DashboardResponse.StockSummary(
                         stock.getCode(), stock.getName(), currentPrice, 0L, null, null, null));
+                continue;
+            }
+
+            if (currentPrice == null) {
+                stockSummaries.add(new DashboardResponse.StockSummary(
+                        stock.getCode(), stock.getName(), null,
+                        holding.getQuantity(), holding.getAvgPrice(), null, null));
                 continue;
             }
 
