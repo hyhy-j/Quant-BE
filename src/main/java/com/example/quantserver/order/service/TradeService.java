@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 public class TradeService {
 
     private static final BigDecimal INITIAL_BALANCE = new BigDecimal("10000000");
+    private static final int HISTORY_DAYS = 30;
 
     private final PortfolioRepository portfolioRepository;
     private final StockRepository stockRepository;
@@ -81,7 +82,7 @@ public class TradeService {
         Portfolio portfolio = portfolioRepository.findByUserId(userId).orElse(null);
         if (portfolio == null) {
             PnlInfo zero = new PnlInfo(BigDecimal.ZERO, BigDecimal.ZERO);
-            return new OrderStatsResponse(zero, zero, zero);
+            return new OrderStatsResponse(zero, zero, zero, List.of());
         }
 
         BigDecimal currentBalance = portfolio.getBalance();
@@ -94,8 +95,17 @@ public class TradeService {
         return new OrderStatsResponse(
                 calculatePnl(userId, currentBalance, initialBalance, dailyStart),
                 calculatePnl(userId, currentBalance, initialBalance, weeklyStart),
-                calculatePnl(userId, currentBalance, initialBalance, monthlyStart)
+                calculatePnl(userId, currentBalance, initialBalance, monthlyStart),
+                getHistory(userId)
         );
+    }
+
+    private List<OrderStatsResponse.HistoryPoint> getHistory(Long userId) {
+        LocalDate start = LocalDate.now().minusDays(HISTORY_DAYS - 1L);
+        return portfolioSnapshotRepository.findByUserIdAndDateBetweenOrderByDateAsc(userId, start, LocalDate.now())
+                .stream()
+                .map(snapshot -> new OrderStatsResponse.HistoryPoint(snapshot.getDate(), snapshot.getTotalAssets()))
+                .toList();
     }
 
     public BigDecimal calculateTotalAssets(Long userId) {
