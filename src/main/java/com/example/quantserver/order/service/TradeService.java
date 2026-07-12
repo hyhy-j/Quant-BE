@@ -11,11 +11,13 @@ import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
 import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Portfolio;
+import com.example.quantserver.order.entity.PortfolioSnapshot;
 import com.example.quantserver.order.entity.Stock;
 import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.entity.TradeOrder;
 import com.example.quantserver.order.repository.HoldingRepository;
 import com.example.quantserver.order.repository.PortfolioRepository;
+import com.example.quantserver.order.repository.PortfolioSnapshotRepository;
 import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
 import com.example.quantserver.order.repository.TradeOrderRepository;
@@ -46,6 +48,7 @@ public class TradeService {
     private final TradeOrderRepository tradeOrderRepository;
     private final HoldingRepository holdingRepository;
     private final StockPriceRepository stockPriceRepository;
+    private final PortfolioSnapshotRepository portfolioSnapshotRepository;
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
     private final PortfolioInitializer portfolioInitializer;
@@ -114,6 +117,20 @@ public class TradeService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return cashBalance.add(holdingsValue);
+    }
+
+    @Transactional
+    public void saveTodaySnapshot(Long userId) {
+        LocalDate today = LocalDate.now();
+        if (portfolioSnapshotRepository.findByUserIdAndDate(userId, today).isPresent()) {
+            return;
+        }
+
+        portfolioSnapshotRepository.save(PortfolioSnapshot.builder()
+                .userId(userId)
+                .date(today)
+                .totalAssets(calculateTotalAssets(userId))
+                .build());
     }
 
     public PnlInfo getCumulativePnl(Long userId, BigDecimal currentTotalAssets) {
