@@ -23,7 +23,7 @@ public class PortfolioScheduler {
     private final InvestmentProfileRepository profileRepository;
 
     @Async
-    @Scheduled(cron = "0 0 9 * * MON")
+    @Scheduled(cron = "0 0 9 * * MON", zone = "Asia/Seoul")
     public void generateWeeklyPortfolios() {
         List<InvestmentProfile> profiles = profileRepository.findAllCurrentWithUser();
         log.info("주간 포트폴리오 생성 시작 - 대상 유저 수={}", profiles.size());

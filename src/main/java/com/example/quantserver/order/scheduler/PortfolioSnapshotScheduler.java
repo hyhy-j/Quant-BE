@@ -18,7 +18,7 @@ public class PortfolioSnapshotScheduler {
     private final PortfolioRepository portfolioRepository;
     private final TradeService tradeService;
 
-    @Scheduled(cron = "0 0 19 * * MON-FRI")
+    @Scheduled(cron = "0 0 19 * * MON-FRI", zone = "Asia/Seoul")
     public void saveDailySnapshots() {
         List<Portfolio> portfolios = portfolioRepository.findAll();
         log.info("포트폴리오 일별 스냅샷 저장 시작 - 대상 유저 수={}", portfolios.size());
