@@ -11,7 +11,6 @@ import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
 import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Portfolio;
-import com.example.quantserver.order.entity.PortfolioSnapshot;
 import com.example.quantserver.order.entity.Stock;
 import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.entity.TradeOrder;
@@ -131,16 +130,7 @@ public class TradeService {
 
     @Transactional
     public void saveTodaySnapshot(Long userId) {
-        LocalDate today = LocalDate.now();
-        if (portfolioSnapshotRepository.findByUserIdAndDate(userId, today).isPresent()) {
-            return;
-        }
-
-        portfolioSnapshotRepository.save(PortfolioSnapshot.builder()
-                .userId(userId)
-                .date(today)
-                .totalAssets(calculateTotalAssets(userId))
-                .build());
+        portfolioSnapshotRepository.upsertIfAbsent(userId, LocalDate.now(), calculateTotalAssets(userId));
     }
 
     public PnlInfo getCumulativePnl(Long userId, BigDecimal currentTotalAssets) {
