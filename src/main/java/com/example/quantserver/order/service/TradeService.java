@@ -9,10 +9,15 @@ import com.example.quantserver.order.dto.OrderStatsResponse;
 import com.example.quantserver.order.dto.PnlInfo;
 import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
+import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Portfolio;
 import com.example.quantserver.order.entity.Stock;
+import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.entity.TradeOrder;
+import com.example.quantserver.order.repository.HoldingRepository;
 import com.example.quantserver.order.repository.PortfolioRepository;
+import com.example.quantserver.order.repository.PortfolioSnapshotRepository;
+import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
 import com.example.quantserver.order.repository.TradeOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,9 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,10 +41,14 @@ import java.time.LocalDateTime;
 public class TradeService {
 
     private static final BigDecimal INITIAL_BALANCE = new BigDecimal("10000000");
+    private static final int HISTORY_DAYS = 30;
 
     private final PortfolioRepository portfolioRepository;
     private final StockRepository stockRepository;
     private final TradeOrderRepository tradeOrderRepository;
+    private final HoldingRepository holdingRepository;
+    private final StockPriceRepository stockPriceRepository;
+    private final PortfolioSnapshotRepository portfolioSnapshotRepository;
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
     private final PortfolioInitializer portfolioInitializer;
@@ -69,7 +81,7 @@ public class TradeService {
         Portfolio portfolio = portfolioRepository.findByUserId(userId).orElse(null);
         if (portfolio == null) {
             PnlInfo zero = new PnlInfo(BigDecimal.ZERO, BigDecimal.ZERO);
-            return new OrderStatsResponse(zero, zero, zero);
+            return new OrderStatsResponse(zero, zero, zero, List.of());
         }
 
         BigDecimal currentBalance = portfolio.getBalance();
@@ -82,8 +94,59 @@ public class TradeService {
         return new OrderStatsResponse(
                 calculatePnl(userId, currentBalance, initialBalance, dailyStart),
                 calculatePnl(userId, currentBalance, initialBalance, weeklyStart),
-                calculatePnl(userId, currentBalance, initialBalance, monthlyStart)
+                calculatePnl(userId, currentBalance, initialBalance, monthlyStart),
+                getHistory(userId)
         );
+    }
+
+    private List<OrderStatsResponse.HistoryPoint> getHistory(Long userId) {
+        LocalDate start = LocalDate.now().minusDays(HISTORY_DAYS - 1L);
+        return portfolioSnapshotRepository.findByUserIdAndDateBetweenOrderByDateAsc(userId, start, LocalDate.now())
+                .stream()
+                .map(snapshot -> new OrderStatsResponse.HistoryPoint(snapshot.getDate(), snapshot.getTotalAssets()))
+                .toList();
+    }
+
+    public BigDecimal calculateTotalAssets(Long userId) {
+        BigDecimal cashBalance = portfolioRepository.findByUserId(userId)
+                .map(Portfolio::getBalance)
+                .orElse(BigDecimal.ZERO);
+
+        List<Holding> holdings = holdingRepository.findAllByUserId(userId);
+        if (holdings.isEmpty()) {
+            return cashBalance;
+        }
+
+        Map<String, BigDecimal> latestPrices = stockPriceRepository.findLatestPrices().stream()
+                .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
+
+        BigDecimal holdingsValue = holdings.stream()
+                .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), holding.getAvgPrice())
+                        .multiply(BigDecimal.valueOf(holding.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return cashBalance.add(holdingsValue);
+    }
+
+    @Transactional
+    public void saveTodaySnapshot(Long userId) {
+        portfolioSnapshotRepository.upsertIfAbsent(userId, LocalDate.now(), calculateTotalAssets(userId));
+    }
+
+    public PnlInfo getCumulativePnl(Long userId, BigDecimal currentTotalAssets) {
+        Portfolio portfolio = portfolioRepository.findByUserId(userId).orElse(null);
+        if (portfolio == null) {
+            return new PnlInfo(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+
+        BigDecimal initialBalance = portfolio.getInitialBalance();
+        BigDecimal amount = currentTotalAssets.subtract(initialBalance);
+        BigDecimal rate = initialBalance.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : amount.divide(initialBalance, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"));
+
+        return new PnlInfo(amount, rate);
     }
 
     private PnlInfo calculatePnl(Long userId, BigDecimal currentBalance,
