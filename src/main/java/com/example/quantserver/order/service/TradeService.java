@@ -86,6 +86,22 @@ public class TradeService {
         );
     }
 
+    public PnlInfo getCumulativePnl(Long userId, BigDecimal currentTotalAssets) {
+        Portfolio portfolio = portfolioRepository.findByUserId(userId).orElse(null);
+        if (portfolio == null) {
+            return new PnlInfo(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+
+        BigDecimal initialBalance = portfolio.getInitialBalance();
+        BigDecimal amount = currentTotalAssets.subtract(initialBalance);
+        BigDecimal rate = initialBalance.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : amount.divide(initialBalance, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"));
+
+        return new PnlInfo(amount, rate);
+    }
+
     private PnlInfo calculatePnl(Long userId, BigDecimal currentBalance,
                                   BigDecimal initialBalance, LocalDateTime periodStart) {
         BigDecimal startBalance = tradeOrderRepository
