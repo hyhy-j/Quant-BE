@@ -3,11 +3,9 @@ package com.example.quantserver.dashboard.service;
 import com.example.quantserver.dashboard.dto.DashboardResponse;
 import com.example.quantserver.order.dto.PnlInfo;
 import com.example.quantserver.order.entity.Holding;
-import com.example.quantserver.order.entity.Portfolio;
 import com.example.quantserver.order.entity.Stock;
 import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.repository.HoldingRepository;
-import com.example.quantserver.order.repository.PortfolioRepository;
 import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
 import com.example.quantserver.order.service.TradeService;
@@ -31,7 +29,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    private final PortfolioRepository portfolioRepository;
     private final StockRepository stockRepository;
     private final HoldingRepository holdingRepository;
     private final StockPriceRepository stockPriceRepository;
@@ -39,10 +36,6 @@ public class DashboardService {
     private final TradeService tradeService;
 
     public DashboardResponse getDashboard(Long userId) {
-        BigDecimal cashBalance = portfolioRepository.findByUserId(userId)
-                .map(Portfolio::getBalance)
-                .orElse(BigDecimal.ZERO);
-
         Map<String, Holding> holdingsByStockCode = holdingRepository.findAllByUserId(userId).stream()
                 .collect(Collectors.toMap(Holding::getStockCode, Function.identity()));
 
@@ -50,7 +43,6 @@ public class DashboardService {
                 .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
 
         List<DashboardResponse.StockSummary> stockSummaries = new ArrayList<>();
-        BigDecimal holdingsValue = BigDecimal.ZERO;
 
         for (Stock stock : stockRepository.findAll()) {
             BigDecimal currentPrice = latestPrices.getOrDefault(stock.getCode(), BigDecimal.ZERO);
@@ -63,7 +55,6 @@ public class DashboardService {
             }
 
             BigDecimal totalValue = currentPrice.multiply(BigDecimal.valueOf(holding.getQuantity()));
-            holdingsValue = holdingsValue.add(totalValue);
 
             stockSummaries.add(new DashboardResponse.StockSummary(
                     stock.getCode(), stock.getName(), currentPrice,
@@ -71,7 +62,7 @@ public class DashboardService {
                     calculateUnrealizedPnl(holding, totalValue)));
         }
 
-        BigDecimal totalAssets = cashBalance.add(holdingsValue);
+        BigDecimal totalAssets = tradeService.calculateTotalAssets(userId);
         PnlInfo todayPnl = tradeService.getStats(userId).daily();
         PnlInfo cumulativePnl = tradeService.getCumulativePnl(userId, totalAssets);
 

@@ -9,10 +9,14 @@ import com.example.quantserver.order.dto.OrderStatsResponse;
 import com.example.quantserver.order.dto.PnlInfo;
 import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
+import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Portfolio;
 import com.example.quantserver.order.entity.Stock;
+import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.entity.TradeOrder;
+import com.example.quantserver.order.repository.HoldingRepository;
 import com.example.quantserver.order.repository.PortfolioRepository;
+import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
 import com.example.quantserver.order.repository.TradeOrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,9 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +44,8 @@ public class TradeService {
     private final PortfolioRepository portfolioRepository;
     private final StockRepository stockRepository;
     private final TradeOrderRepository tradeOrderRepository;
+    private final HoldingRepository holdingRepository;
+    private final StockPriceRepository stockPriceRepository;
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
     private final PortfolioInitializer portfolioInitializer;
@@ -84,6 +93,27 @@ public class TradeService {
                 calculatePnl(userId, currentBalance, initialBalance, weeklyStart),
                 calculatePnl(userId, currentBalance, initialBalance, monthlyStart)
         );
+    }
+
+    public BigDecimal calculateTotalAssets(Long userId) {
+        BigDecimal cashBalance = portfolioRepository.findByUserId(userId)
+                .map(Portfolio::getBalance)
+                .orElse(BigDecimal.ZERO);
+
+        List<Holding> holdings = holdingRepository.findAllByUserId(userId);
+        if (holdings.isEmpty()) {
+            return cashBalance;
+        }
+
+        Map<String, BigDecimal> latestPrices = stockPriceRepository.findLatestPrices().stream()
+                .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
+
+        BigDecimal holdingsValue = holdings.stream()
+                .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(holding.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return cashBalance.add(holdingsValue);
     }
 
     public PnlInfo getCumulativePnl(Long userId, BigDecimal currentTotalAssets) {
