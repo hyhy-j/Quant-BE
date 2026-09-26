@@ -7,24 +7,26 @@ import com.example.quantserver.order.dto.AiOrderExecuteRequest;
 import com.example.quantserver.order.dto.OrderExecuteResponse;
 import com.example.quantserver.order.dto.OrderStatsResponse;
 import com.example.quantserver.order.dto.PnlInfo;
+import com.example.quantserver.order.dto.TradableStockResponse;
 import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
 import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Portfolio;
 import com.example.quantserver.order.entity.Stock;
-import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.entity.TradeOrder;
 import com.example.quantserver.order.repository.HoldingRepository;
 import com.example.quantserver.order.repository.PortfolioRepository;
 import com.example.quantserver.order.repository.PortfolioSnapshotRepository;
-import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
 import com.example.quantserver.order.repository.TradeOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -33,7 +35,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,28 +42,42 @@ import java.util.stream.Collectors;
 public class TradeService {
 
     private static final BigDecimal INITIAL_BALANCE = new BigDecimal("10000000");
-    private static final int HISTORY_DAYS = 30;
+    private static final int HISTORY_DAYS = 60;
 
     private final PortfolioRepository portfolioRepository;
     private final StockRepository stockRepository;
     private final TradeOrderRepository tradeOrderRepository;
     private final HoldingRepository holdingRepository;
-    private final StockPriceRepository stockPriceRepository;
+    private final StockPriceCacheService stockPriceCacheService;
     private final PortfolioSnapshotRepository portfolioSnapshotRepository;
     private final AiServerClient aiServerClient;
     private final RiskCheckService riskCheckService;
     private final PortfolioInitializer portfolioInitializer;
+    private final PlatformTransactionManager transactionManager;
 
-    @Transactional
+    /**
+     * AI 서버(quant-ai-server)는 체결 시 이 서버와 같은 DB의 portfolios/holdings 행을 직접 UPDATE한다.
+     * 따라서 락을 잡은 채로 AI 서버를 동기 호출하면, "이 서버는 AI 서버 응답을 기다리며 락을 들고 있고
+     * AI 서버는 그 락이 풀리길 기다리는" 데드락이 발생한다. 락+검증은 짧은 트랜잭션으로 끝내 즉시 커밋(=락 해제)하고,
+     * AI 서버 호출은 트랜잭션 밖에서 수행한다.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public OrderExecuteResponse placeOrder(Long userId, TradeOrderRequest request) {
-        Stock stock = stockRepository.findByName(request.stockName())
-                .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
+        TransactionTemplate lockAndValidate = new TransactionTemplate(transactionManager);
+        lockAndValidate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
 
-        portfolioInitializer.ensureExists(userId, INITIAL_BALANCE);
-        Portfolio portfolio = portfolioRepository.findWithLockByUserId(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+        Stock stock = lockAndValidate.execute(status -> {
+            Stock lockedStock = stockRepository.findByName(request.stockName())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND));
 
-        riskCheckService.check(portfolio, stock.getCode(), request.side(), request.quantity(), request.orderAmount());
+            portfolioInitializer.ensureExists(userId, INITIAL_BALANCE);
+            Portfolio portfolio = portfolioRepository.findWithLockByUserId(userId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+
+            riskCheckService.check(portfolio, lockedStock.getCode(), request.side(), request.quantity(), request.orderAmount());
+
+            return lockedStock;
+        });
 
         return aiServerClient.executePortfolio(new AiOrderExecuteRequest(
                 userId,
@@ -75,6 +90,18 @@ public class TradeService {
     public Page<TradeOrderResponse> getOrders(Long userId, Pageable pageable) {
         return tradeOrderRepository.findByUserIdOrderByExecutedAtDesc(userId, pageable)
                 .map(TradeOrderResponse::from);
+    }
+
+    public List<TradableStockResponse> getTradableStocks() {
+        Map<String, BigDecimal> latestPrices = stockPriceCacheService.getLatestPrices();
+
+        return stockRepository.findAll().stream()
+                .map(stock -> new TradableStockResponse(
+                        stock.getCode(),
+                        stock.getName(),
+                        latestPrices.get(stock.getCode())
+                ))
+                .toList();
     }
 
     public OrderStatsResponse getStats(Long userId) {
@@ -117,8 +144,7 @@ public class TradeService {
             return cashBalance;
         }
 
-        Map<String, BigDecimal> latestPrices = stockPriceRepository.findLatestPrices().stream()
-                .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
+        Map<String, BigDecimal> latestPrices = stockPriceCacheService.getLatestPrices();
 
         BigDecimal holdingsValue = holdings.stream()
                 .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), holding.getAvgPrice())

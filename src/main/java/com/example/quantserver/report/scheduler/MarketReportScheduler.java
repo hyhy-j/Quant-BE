@@ -25,11 +25,6 @@ public class MarketReportScheduler {
         generate(ReportType.MORNING);
     }
 
-    @Scheduled(cron = "0 0 18 * * MON-FRI", zone = "Asia/Seoul")
-    public void generateEveningReport() {
-        generate(ReportType.EVENING);
-    }
-
     private void generate(ReportType reportType) {
         LocalDateTime startedAt = LocalDateTime.now();
         log.info("{} 리포트 생성 시작", reportType);

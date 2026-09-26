@@ -4,6 +4,7 @@ import com.example.quantserver.global.jwt.CustomUserDetails;
 import com.example.quantserver.global.response.ApiResponse;
 import com.example.quantserver.order.dto.OrderExecuteResponse;
 import com.example.quantserver.order.dto.OrderStatsResponse;
+import com.example.quantserver.order.dto.TradableStockResponse;
 import com.example.quantserver.order.dto.TradeOrderRequest;
 import com.example.quantserver.order.dto.TradeOrderResponse;
 import com.example.quantserver.order.service.TradeService;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "Order", description = "가상 매매 API")
 @RestController
@@ -50,5 +53,11 @@ public class TradeController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         return ApiResponse.success(tradeService.getStats(userDetails.getId()));
+    }
+
+    @Operation(summary = "거래 가능 종목 목록 조회", description = "매수/매도 가능한 전체 종목과 최신 가격을 조회합니다.")
+    @GetMapping("/stocks")
+    public ApiResponse<List<TradableStockResponse>> getStocks() {
+        return ApiResponse.success(tradeService.getTradableStocks());
     }
 }
