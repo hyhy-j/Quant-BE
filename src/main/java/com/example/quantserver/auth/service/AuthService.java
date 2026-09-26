@@ -128,6 +128,6 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        return TokenResponse.of(accessToken, refreshToken);
+        return TokenResponse.of(accessToken, refreshToken, user.getNickname());
     }
 }

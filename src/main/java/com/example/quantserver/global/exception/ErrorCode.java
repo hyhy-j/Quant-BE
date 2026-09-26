@@ -35,9 +35,19 @@ public enum ErrorCode {
     // Report
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "리포트를 찾을 수 없습니다."),
 
+    // Portfolio
+    PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "PF001", "포트폴리오를 찾을 수 없습니다."),
+
+    // Trade
+    STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "해당 종목을 찾을 수 없습니다."),
+    RISK_TRADING_HALTED(HttpStatus.BAD_REQUEST, "T002", "포트폴리오 손실 한도(-15%) 초과로 모든 거래가 중단되었습니다."),
+    RISK_DAILY_TRADE_LIMIT(HttpStatus.BAD_REQUEST, "T003", "일일 거래 한도를 초과하여 주문이 차단되었습니다."),
+    RISK_CONCENTRATION_LIMIT(HttpStatus.BAD_REQUEST, "T004", "단일 종목 비중이 20%를 초과하여 주문이 차단되었습니다."),
+
     // AI Server
     AI_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI001", "AI 서버에 연결할 수 없습니다."),
-    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI002", "AI 서버 응답 시간이 초과되었습니다.");
+    AI_SERVER_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI002", "AI 서버 응답 시간이 초과되었습니다."),
+    AI_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "AI003", "AI 서버 응답 형식이 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

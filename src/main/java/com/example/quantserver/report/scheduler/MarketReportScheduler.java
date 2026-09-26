@@ -20,14 +20,9 @@ public class MarketReportScheduler {
 
     private final MarketReportService marketReportService;
 
-    @Scheduled(cron = "0 0 8 * * MON-FRI")
+    @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
     public void generateMorningReport() {
         generate(ReportType.MORNING);
-    }
-
-    @Scheduled(cron = "0 0 18 * * MON-FRI")
-    public void generateEveningReport() {
-        generate(ReportType.EVENING);
     }
 
     private void generate(ReportType reportType) {
