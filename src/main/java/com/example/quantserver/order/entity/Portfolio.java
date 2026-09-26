@@ -48,9 +48,9 @@ public class Portfolio {
                 .build();
     }
 
-    public boolean isLossHalted() {
+    public boolean isLossHalted(BigDecimal totalAssets) {
         if (initialBalance.compareTo(BigDecimal.ZERO) == 0) return false;
-        BigDecimal lossRate = balance.subtract(initialBalance)
+        BigDecimal lossRate = totalAssets.subtract(initialBalance)
                 .divide(initialBalance, 4, RoundingMode.HALF_UP);
         return lossRate.compareTo(new BigDecimal("-0.15")) < 0;
     }

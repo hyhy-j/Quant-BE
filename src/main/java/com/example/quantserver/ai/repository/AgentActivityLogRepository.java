@@ -10,4 +10,6 @@ public interface AgentActivityLogRepository extends JpaRepository<AgentActivityL
     List<AgentActivityLog> findAllByOrderByCreatedAtDesc();
 
     List<AgentActivityLog> findAllByAgentTypeOrderByCreatedAtDesc(String agentType);
+
+    List<AgentActivityLog> findTop20ByOrderByCreatedAtDesc();
 }

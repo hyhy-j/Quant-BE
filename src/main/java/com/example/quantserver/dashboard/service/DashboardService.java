@@ -4,10 +4,9 @@ import com.example.quantserver.dashboard.dto.DashboardResponse;
 import com.example.quantserver.order.dto.PnlInfo;
 import com.example.quantserver.order.entity.Holding;
 import com.example.quantserver.order.entity.Stock;
-import com.example.quantserver.order.entity.StockPrice;
 import com.example.quantserver.order.repository.HoldingRepository;
-import com.example.quantserver.order.repository.StockPriceRepository;
 import com.example.quantserver.order.repository.StockRepository;
+import com.example.quantserver.order.service.StockPriceCacheService;
 import com.example.quantserver.order.service.TradeService;
 import com.example.quantserver.report.dto.MarketReportResponse;
 import com.example.quantserver.report.repository.MarketReportRepository;
@@ -31,7 +30,7 @@ public class DashboardService {
 
     private final StockRepository stockRepository;
     private final HoldingRepository holdingRepository;
-    private final StockPriceRepository stockPriceRepository;
+    private final StockPriceCacheService stockPriceCacheService;
     private final MarketReportRepository marketReportRepository;
     private final TradeService tradeService;
 
@@ -39,8 +38,7 @@ public class DashboardService {
         Map<String, Holding> holdingsByStockCode = holdingRepository.findAllByUserId(userId).stream()
                 .collect(Collectors.toMap(Holding::getStockCode, Function.identity()));
 
-        Map<String, BigDecimal> latestPrices = stockPriceRepository.findLatestPrices().stream()
-                .collect(Collectors.toMap(StockPrice::getStockCode, StockPrice::getClose));
+        Map<String, BigDecimal> latestPrices = stockPriceCacheService.getLatestPrices();
 
         List<DashboardResponse.StockSummary> stockSummaries = new ArrayList<>();
 

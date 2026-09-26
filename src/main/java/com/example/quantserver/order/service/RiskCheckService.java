@@ -16,6 +16,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -28,6 +29,7 @@ public class RiskCheckService {
 
     private final TradeOrderRepository tradeOrderRepository;
     private final HoldingRepository holdingRepository;
+    private final StockPriceCacheService stockPriceCacheService;
 
     public void check(Portfolio portfolio, String stockCode, OrderSide side, long quantity, BigDecimal orderAmount) {
         checkLossHalt(portfolio);
@@ -38,9 +40,22 @@ public class RiskCheckService {
     }
 
     private void checkLossHalt(Portfolio portfolio) {
-        if (portfolio.isLossHalted()) {
+        BigDecimal totalAssets = calculateTotalAssets(portfolio);
+        if (portfolio.isLossHalted(totalAssets)) {
             throw new BusinessException(ErrorCode.RISK_TRADING_HALTED);
         }
+    }
+
+    private BigDecimal calculateTotalAssets(Portfolio portfolio) {
+        List<Holding> holdings = holdingRepository.findAllByUserId(portfolio.getUserId());
+        Map<String, BigDecimal> latestPrices = stockPriceCacheService.getLatestPrices();
+
+        BigDecimal holdingsValue = holdings.stream()
+                .map(holding -> latestPrices.getOrDefault(holding.getStockCode(), holding.getAvgPrice())
+                        .multiply(BigDecimal.valueOf(holding.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return portfolio.getBalance().add(holdingsValue);
     }
 
     private void checkDailyTradeLimit(Long userId) {

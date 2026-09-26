@@ -42,3 +42,5 @@ application-local.yml
 
 ### Local design assets ###
 design/
+
+docs
